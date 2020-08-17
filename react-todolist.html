@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+</head>
+
+<body>
+  <!-- 实现增删，全选反选 -->
+  <!-- 实现清除选中选项，显示选中选项数目 -->
+  <!-- 实现鼠标双击一个选项就编辑内容，注意key=content有bug -->
+  <div id="root"></div>
+  <script type="text/babel">
+    class TodoApp extends React.Component {
+      constructor() {
+        super()
+        this.state = {
+          editingIndex: -1,
+          todos: [{
+            content: 'eat',
+            active: true,
+          }, {
+            content: 'drink',
+            active: false,
+          }, {
+            content: 'sleep',
+            active: true,
+          }]
+        }
+      }
+
+      deleteTodo = (todo) => {
+        this.setState({
+          todos: this.state.todos.filter(it => it !== todo)
+        })
+      }
+
+      addTodo = (e) => {
+        var content = e.target.value.trim()
+        if (e.keyCode == 13 && content) {
+          this.setState({
+            todos: [
+              ...this.state.todos,
+              {
+                content,
+                active: true,
+              }
+            ]
+          })
+        }
+      }
+
+      toggleTodoStatus = (todo) => {
+        this.setState({
+          todos: this.state.todos.map(it => {
+            if (it == todo) {
+              return {
+                content: it.content,
+                active: !it.active,
+              }
+            } else {
+              return it
+            }
+          })
+        })
+      }
+
+      isAllCompleted = () => {
+        return this.state.todos.every(it => !it.active)
+      }
+
+      toggleAll = () => {
+        if (this.isAllCompleted()) {
+          this.setState({
+            todos: this.state.todos.map(it => {
+              return {
+                ...it,
+                active: true
+              }
+            })
+          })
+        } else {
+          this.setState({
+            todos: this.state.todos.map(it => {
+              return {
+                ...it,
+                active: false
+              }
+            })
+          })
+        }
+      }
+
+      activeCount = () => {
+        return this.state.todos.filter(it => it.active).length
+      }
+
+      hasCompleted = () => {
+        return this.state.todos.some(it => !it.active)
+      }
+
+      clearCompleted = () => {
+        this.setState({
+          todos: this.state.todos.filter(it => it.active)
+        })
+      }
+
+      setEditingIdx = (i) => {
+        this.setState({
+          editingIndex: i
+        })
+        setTimeout(() => {
+          this.refs.edit.focus()
+        })
+      }
+
+      setTodoContent = (e, todo) => {
+        var content = e.target.value.trim()
+        this.setState({
+          todos: this.state.todos.map(it => {
+            if (it == todo) {
+              return {
+                ...todo,
+                content,
+              }
+            } else {
+              return it
+            }
+          })
+        })
+      }
+
+      render() {
+        return (
+          <div id="todo-app">
+            <div>
+              <input type="checkbox" checked={this.isAllCompleted()} onChange={this.toggleAll} />
+              <input type="text" onKeyUp={this.addTodo} />
+            </div>
+            <ul>
+              {
+                this.state.todos.map((todo, idx) => (
+                  // key={todo.idx}会有bug。一旦内容改变，哪怕是一个字母的变化，那么key也会改变，就会渲染一个新的li，这样新的li会没有光标，光标在旧的被删除替换的原来的li上
+                  <li key={todo.idx}>
+                    <input type="checkbox" checked={!todo.active} onChange={() => this.toggleTodoStatus(todo)} />
+                    {
+                      this.state.editingIndex != idx ?
+                        <span onDoubleClick={() => { this.setEditingIdx(idx) }}>{todo.content}</span>
+                        :
+                        <input type="text" value={todo.content} onBlur={() => this.setState({ editingIndex: -1 })} onChange={(e) => this.setTodoContent(e, todo)} />
+                    }
+                    <button onClick={(e) => this.deleteTodo(todo)}>&times;</button >
+                  </li>
+                ))
+              }
+            </ul>
+            <div>
+              <span>{this.activeCount()} item(s) left</span>
+              <span>
+              </span>
+              {
+                this.hasCompleted() &&
+                <button onClick={this.clearCompleted}>Clear Completed</button>
+              }
+
+            </div>
+          </div>
+        )
+      }
+    }
+
+    ReactDOM.render(
+      <TodoApp />,
+      document.getElementById('root')
+    );
+  </script>
+</body>
+
+</html>
